@@ -3,7 +3,7 @@ const path = require('node:path');
 const jsonServer = require('json-server');
 function createApp(database) {
   const app = jsonServer.create();
-  app.use(jsonServer.defaults({ logger: false, static: false }));
+  app.use(jsonServer.defaults({ logger: false }));
   app.use(jsonServer.bodyParser);
   app.use((req, res, next) => {
     if (req.path !== '/notes' || !['GET', 'POST'].includes(req.method)) return res.status(404).json('Маршрут не найден.');

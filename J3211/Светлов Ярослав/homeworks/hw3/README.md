@@ -4,4 +4,4 @@ Node.js 22+. Установка: `npm ci`. Запуск: `npm start`, адрес
 Тесты: `npm test`. Аккаунты: `admin@nexus.ai` / `password`, `vision@nexus.ai` / `cv12345`.
 Светлая или тёмная тема выбирается по настройке системы. Рабочая база — `db.local.json`.
 
-[Отчёт и скриншоты](REPORT.md).
+[Отчёт в PDF](Отчёт.pdf), [исходник LaTeX](report.tex).

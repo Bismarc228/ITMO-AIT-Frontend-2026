@@ -1,0 +1,13 @@
+# ДЗ2 — доступность
+
+Самостоятельная копия платформы из ЛР2. Node.js 22 или новее.
+
+```sh
+npm ci
+npm start
+```
+
+Открыть http://localhost:3002. Аккаунты: `admin@nexus.ai` и `alex@nexus.ai`, пароль `password`.
+`npm test` — проверки API. Данные сохраняются в игнорируемом `db.local.json`, исходные примеры — `db.json`.
+
+Изменения, скриншоты и результаты аудита: [REPORT.md](REPORT.md).

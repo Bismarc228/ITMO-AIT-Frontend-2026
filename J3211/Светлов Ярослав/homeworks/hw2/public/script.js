@@ -4,6 +4,7 @@ let session = null;
 let chart = null;
 let routeVersion = 0;
 let nextMessage = '';
+let activePage = '';
 try {
   const saved = JSON.parse(localStorage.getItem(SESSION_KEY));
   if (saved?.accessToken && saved?.user?.id) session = saved;
@@ -18,6 +19,7 @@ function escapeHtml(value) {
 }
 
 function message(text, type = 'danger') {
+  $('#message').setAttribute('role', type === 'danger' ? 'alert' : 'status');
   $('#message').textContent = text;
   $('#message').className = `alert alert-${type}`;
   $('#message').hidden = !text;
@@ -73,9 +75,10 @@ function experimentLink(experiment) {
   return `<a href="#experiment/${encodeURIComponent(experiment.id)}">${escapeHtml(experiment.name)}</a>`;
 }
 
-function experimentsTable(experiments) {
+function experimentsTable(experiments, caption = 'Результаты поиска экспериментов') {
   if (!experiments.length) return '<p>Эксперименты не найдены.</p>';
-  return `<div class="table-responsive"><table class="table table-striped">
+  return `<div class="table-responsive" tabindex="0" role="region" aria-label="${caption}"><table class="table table-striped">
+    <caption class="visually-hidden">${caption}</caption>
     <thead><tr><th>Эксперимент</th><th>Дата</th><th>Тег</th><th>Accuracy</th><th>Latency, мс</th></tr></thead>
     <tbody>${experiments.map(item => `<tr>
       <td>${experimentLink(item)}<br><small>${escapeHtml(item.id)}</small></td>
@@ -94,7 +97,8 @@ function artifactsList(artifacts) {
 
 function modelsTable(models, editable = false) {
   if (!models.length) return '<p>Моделей пока нет.</p>';
-  return `<div class="table-responsive"><table class="table table-striped">
+  return `<div class="table-responsive" tabindex="0" role="region" aria-label="Версии моделей"><table class="table table-striped">
+    <caption class="visually-hidden">Версии моделей и их статусы</caption>
     <thead><tr><th>Модель</th><th>Версия</th><th>Эксперимент и артефакты</th><th>Статус</th></tr></thead>
     <tbody>${models.map(model => `<tr>
       <td>${escapeHtml(model.name)}${model.userId === session.user.id ? '' : '<br><small>Другой пользователь</small>'}</td>
@@ -102,10 +106,11 @@ function modelsTable(models, editable = false) {
       <td>${experimentLink({ id: model.linkedExperimentId, name: model.linkedExperimentId })}</td>
       <td>${editable && model.userId === session.user.id ? `
         <form data-model-id="${escapeHtml(model.id)}" class="d-flex gap-2">
+          <label>Статус
           <select class="form-select form-select-sm" name="stage" aria-label="Статус ${escapeHtml(model.name)} ${escapeHtml(model.version)}">
             ${['Staging', 'Production', 'Archived'].map(stage => `<option${stage === model.stage ? ' selected' : ''}>${stage}</option>`).join('')}
-          </select>
-          <button class="btn btn-sm btn-outline-primary" type="submit">Сохранить</button>
+          </select></label>
+          <button class="btn btn-sm btn-outline-primary" type="submit" aria-label="Сохранить статус ${escapeHtml(model.name)} ${escapeHtml(model.version)}">Сохранить</button>
         </form>` : escapeHtml(model.stage)}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
@@ -116,7 +121,7 @@ function renderDashboard([experiments, models]) {
   $('#dashboard-content').innerHTML = `
     <p><strong>${escapeHtml(session.user.name)}</strong> · ${escapeHtml(session.user.email)}</p>
     <p>Эксперименты: ${experiments.length} · Версии моделей: ${models.length} · Артефакты: ${artifacts.length}</p>
-    <h2 class="h5 mt-4">Мои эксперименты</h2>${experimentsTable(experiments)}
+    <h2 class="h5 mt-4">Мои эксперименты</h2>${experimentsTable(experiments, 'Мои эксперименты')}
     <h2 class="h5 mt-4">Мои модели</h2>${modelsTable(models)}
     <h2 class="h5 mt-4">Мои артефакты</h2>${artifactsList(artifacts)}`;
 }
@@ -129,8 +134,9 @@ function renderExperiment(experiment) {
     <p>${escapeHtml(experiment.description)}</p>
     <p>Accuracy: ${experiment.accuracy} · Loss: ${experiment.finalLoss} · Latency: ${experiment.latencyMs} мс</p>
     <h2 class="h5">Метрики</h2>
-    <div class="chart-container mb-3"><canvas id="metrics-chart" aria-label="Accuracy и loss по эпохам" role="img"></canvas></div>
-    <div class="table-responsive"><table class="table table-sm">
+    <div class="chart-container mb-3"><canvas id="metrics-chart" aria-label="Accuracy и loss по эпохам; значения приведены в таблице ниже" role="img" aria-describedby="metrics-caption"></canvas></div>
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Метрики по эпохам"><table class="table table-sm">
+      <caption id="metrics-caption" class="visually-hidden">Численные значения accuracy и loss по эпохам</caption>
       <thead><tr><th>Эпоха</th><th>Accuracy</th><th>Loss</th></tr></thead>
       <tbody>${metrics.labels.map((label, i) => `<tr><td>${escapeHtml(label)}</td><td>${metrics.accuracy[i]}</td><td>${metrics.loss[i]}</td></tr>`).join('')}</tbody>
     </table></div>
@@ -146,7 +152,7 @@ function renderExperiment(experiment) {
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
+      responsive: true, maintainAspectRatio: false, animation: false, events: [],
       scales: { accuracy: { min: 0, max: 1 }, loss: { position: 'right', min: 0, grid: { drawOnChartArea: false } } }
     }
   });
@@ -176,10 +182,12 @@ async function loadRoute() {
   if (!session && !isPublic) { location.hash = '#login'; return; }
   if (session && isPublic) { location.hash = '#dashboard'; return; }
   if (!['login', 'register', 'dashboard', 'search', 'experiment', 'models'].includes(page)) page = 'not-found';
+  const pageChanged = activePage !== `${page}/${experimentId || ''}`;
+  activePage = `${page}/${experimentId || ''}`;
   document.querySelectorAll('main > section').forEach(section => { section.hidden = section.id !== page; });
   $('#navigation').hidden = !session;
   document.querySelectorAll('#navigation a').forEach(link => {
-    if (link.hash === `#${page}`) link.setAttribute('aria-current', 'page');
+    if (link.hash === `#${page === 'experiment' ? 'search' : page}`) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
   message(nextMessage);
@@ -190,6 +198,8 @@ async function loadRoute() {
   $('#model-hint').hidden = true;
   const needsData = ['dashboard', 'search', 'experiment', 'models'].includes(page);
   $('#loading').hidden = !needsData;
+  const section = $(`#${page}`);
+  section.setAttribute('aria-busy', String(needsData));
   try {
     let data;
     if (page === 'dashboard') data = await Promise.all([
@@ -210,9 +220,20 @@ async function loadRoute() {
     if (page === 'experiment') renderExperiment(data);
     if (page === 'models') renderModels(data);
   } catch (error) {
-    if (version === routeVersion) handleError(error);
+    if (version === routeVersion) { handleError(error); $('#message').focus(); }
   } finally {
-    if (version === routeVersion) $('#loading').hidden = true;
+    if (version === routeVersion) {
+      $('#loading').hidden = true;
+      section.setAttribute('aria-busy', 'false');
+      section.querySelectorAll('th').forEach(th => th.setAttribute('scope', 'col'));
+      updateTableFocus();
+      const heading = section.querySelector('h1');
+      if (heading) {
+        heading.tabIndex = -1;
+        document.title = `${heading.textContent} — Nexus ML`;
+        if (pageChanged && $('#message').hidden) heading.focus();
+      }
+    }
   }
 }
 
@@ -224,7 +245,11 @@ async function submit(event, action) {
   button.disabled = true;
   message('');
   try { await action(Object.fromEntries(new FormData(form))); }
-  catch (error) { handleError(error); }
+  catch (error) {
+    form.setAttribute('aria-describedby', 'message');
+    handleError(error);
+    $('#message').focus();
+  }
   finally { button.disabled = false; }
 }
 
@@ -258,6 +283,18 @@ $('#models-list').addEventListener('submit', event => submit(event, async data =
   message('Статус сохранён.', 'success');
 }));
 window.addEventListener('hashchange', loadRoute);
+function updateTableFocus() {
+  document.querySelectorAll('.table-responsive').forEach(table => {
+    if (table.scrollWidth > table.clientWidth) table.tabIndex = 0;
+    else table.removeAttribute('tabindex');
+  });
+}
+window.addEventListener('resize', updateTableFocus);
+$('.skip-link').addEventListener('click', event => {
+  event.preventDefault();
+  $('#main').focus();
+});
+document.addEventListener('input', event => event.target.form?.removeAttribute('aria-describedby'));
 
 async function start() {
   if (session) {

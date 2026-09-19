@@ -82,3 +82,5 @@ npm test
 Исходные примеры экспериментов и метрик взяты из локальной заготовки ЛР2 в `Lab1`.
 Авторизация устроена по примеру курса:
 https://github.com/kantegory/mentoring/tree/master/18_bootstrap_api_example.
+
+[Отчёт в PDF](Отчёт.pdf), [исходник LaTeX](report.tex).

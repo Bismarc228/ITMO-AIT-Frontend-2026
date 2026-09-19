@@ -2,4 +2,3 @@
 [INFO] Cross-validation started
 [INFO] Fold 4 anomaly precision improved
 [INFO] Exported anomaly detector to monitoring bucket
-

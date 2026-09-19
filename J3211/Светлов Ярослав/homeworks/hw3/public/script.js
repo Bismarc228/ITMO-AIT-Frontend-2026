@@ -156,7 +156,23 @@ function renderExperiment(experiment) {
       scales: { accuracy: { min: 0, max: 1 }, loss: { position: 'right', min: 0, grid: { drawOnChartArea: false } } }
     }
   });
+  updateChartTheme();
 }
+
+function updateChartTheme() {
+  if (!chart) return;
+  const css = getComputedStyle(document.documentElement);
+  const color = name => css.getPropertyValue(name).trim();
+  chart.data.datasets[0].borderColor = color('--chart-accuracy');
+  chart.data.datasets[1].borderColor = color('--chart-loss');
+  chart.options.plugins.legend.labels.color = color('--page-text');
+  for (const axis of Object.values(chart.options.scales)) {
+    axis.ticks.color = color('--page-text');
+    axis.grid.color = color('--chart-grid');
+  }
+  chart.update('none');
+}
+window.addEventListener('themechange', updateChartTheme);
 
 function renderModels([models, experiments]) {
   $('#models-list').innerHTML = modelsTable(models, true);
@@ -309,4 +325,3 @@ async function start() {
   await loadRoute();
 }
 start();
-

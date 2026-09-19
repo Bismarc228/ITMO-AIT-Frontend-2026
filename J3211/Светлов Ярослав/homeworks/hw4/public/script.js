@@ -90,7 +90,7 @@ function experimentsTable(experiments, caption = 'Результаты поис�
 function artifactsList(artifacts) {
   if (!artifacts.length) return '<p>Артефактов пока нет.</p>';
   return `<ul>${artifacts.map(item => `<li>
-    <a class="artifact-link" href="${escapeHtml(item.url)}" download>${escapeHtml(item.name)}</a>
+    <a class="artifact-link" href="${escapeHtml(item.url)}" download><svg class="icon" aria-hidden="true" focusable="false"><use href="/sprite.svg#file"/></svg> ${escapeHtml(item.name)}</a>
     <small>(${item.size} байт)</small>
   </li>`).join('')}</ul>`;
 }

@@ -37,3 +37,4 @@ a:hover { color: var(--link-hover); }
 .btn-outline-secondary { --bs-btn-color: var(--page-text); --bs-btn-border-color: var(--page-text); }
 .skip-link { position: absolute; top: -100px; left: 1rem; padding: .5rem; background: var(--page-bg); z-index: 10; }
 .skip-link:focus { top: .5rem; }
+.icon { width: 1em; height: 1em; vertical-align: -.125em; }

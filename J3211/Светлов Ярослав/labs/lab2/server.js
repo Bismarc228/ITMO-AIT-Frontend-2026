@@ -35,6 +35,10 @@ function createApp(database) {
     if (parts.length > 2 || !((readable && req.method === 'GET') || writable)) {
       return res.status(404).json('Маршрут не найден.');
     }
+    const queryKeys = ['date', 'accuracy_gte', 'latencyMs_lte', 'q', 'userId', '_sort', '_order'];
+    if (Object.keys(req.query).some(key => !queryKeys.includes(key))) {
+      return res.status(400).json('Неподдерживаемый параметр запроса.');
+    }
     if (id && !app.db.get(resource).find(item => String(item.id) === id).value()) {
       return res.status(404).json('Запись не найдена.');
     }

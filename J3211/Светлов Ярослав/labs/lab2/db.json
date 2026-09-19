@@ -218,7 +218,7 @@
         "[INFO] Fold 4 anomaly precision improved",
         "[INFO] Exported anomaly detector to monitoring bucket"
       ],
-      "userId": 3,
+      "userId": 2,
       "artifacts": [
         {
           "name": "exp-1212-metrics.json",
